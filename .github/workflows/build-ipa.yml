@@ -1,0 +1,43 @@
+name: Build Yozora IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          brew update
+          brew install cmake ninja ldid python@3.12
+
+      - name: Install meow build tool
+        run: |
+          git clone https://github.com/sqmrak/meow.git /tmp/meow
+          cd /tmp/meow && pip3 install .
+
+      - name: Check environment with meow doctor
+        run: meow doctor
+
+      - name: Fetch dependencies and build host tools
+        run: |
+          meow build core-fetch
+          meow build core-host
+
+      - name: Build Yozora IPA
+        run: |
+          meow build
+          meow build ipa
+
+      - name: Upload IPA Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Yozora-IPA
+          path: build/ipa/*.ipa
